@@ -1,0 +1,16 @@
+Smart contract <-> Ethereum API <-> UI => phức tạp
+Smart contract <-> Web3 <-> UI => better
+Trong web bình thường ta dùng REST API nhưng blockchain sử dụng json-rpc protocol phức tạp hơn. 
+VD: trong web app VD ta cần làm 1 action get hay edit 1 blog thì ta dùng route kiểu blogs/get/id1 or blogs/edit/id1/username gửi request đó tới server 1 là 1 endpoint để phản hồi
+Nhưng nếu thế thì trong blockchain sẽ có vô số endpoints vì số lượng smart contract là vô kể mà mỗi smart contract lại có 1 endpoint khác nhau vì mỗi smart contract lại có get và edit khác nhau. Tốc độ tạo ra smart contract rất nhanh thì chẳng lẽ mỗi lần SM tạo ra, ta lại phải bảo blockchain Ethereum thêm 1 route mới -> điều này là bất khả thi nên dev của ethereum dùng RPC protocol cho phép dev tạo ra bao nhiêu dynamically endpoint đều được
+
+Web3 có thể dùng được cả backend với NodeJS or frontend với browser
+
+Để dùng web3 tương tác vói ethereum ta cần liên kết 1 ethereum node, ta có thể dùng infura vì họ cung cấp API để tương tác với Ethereum node của họ
+
+const Web3 = require('web3'); => backend nodejs
+import Web3 from 'web3'; => front end dùng npm package
+
+unpkg là dự án giúp dùng tất cả các public npm package như CDN cho dự án mà k cần install npm package
+unpkg.com/:package@:version/:file
+VD: unpkg.com/web3@1.2.4/dist/web3.min.js => script nó trong file html luôn

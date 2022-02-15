@@ -1,0 +1,27 @@
+Web3 <--json rpc--> Web3 Provider -> Ethereum Blockchain
+
+Vc dùng web3 là đủ hết chức năng để tương tác với smart contract. Tuy nhiên Ethereum có json-rpc là Ethereum API giúp tương tác với blockchain. Dù nó phức tạp hơn web3 nhưng tốc độ nhanh hơn.
+
+Thông thường: client A request tài nguyên trên server B -> B gửi lại -> A xử lý -> A hiển thị
+RPC(remote procedure call): A yêu cầu remote B thực thi 1 function -> B thực thì vì function implement trên B -> trả kết quả lại cho A dưới dạng tin nhắn
+=> RPC cũng chỉ là gọi procedure từ 1 máy khác không cùng tiến trình với máy thực thi procedure mà thôi
+
+Ta thử gọi API direct vào RPC phần lớn trên console chứ k dùng web3:
+Dùng ganache-cli package: ganache-cli --host 127.0.0.1 --blockTime 2 --networkId 12345678
+host: địa chỉ của host chạy node
+blockTime: Thời gian một block mới được sinh ra
+networkId : networkId của mạng
+ChainID mặc định là 1337
+Dùng remix tương tác với mạng trên bằng cách chuyển sang web3 provider và gõ rpc url vào
+=> Lời gọi RPC có dạng: curl -X POST --data '{"jsonrpc":"2.0","method":"","params":[],"id":64}' http://127.0.0.1:8545
+method là tên procedure muốn gọi VD: web3_clientVersion, web3_sha3,..; params là tham số trong request thực hiện các filter; id là giá trị hữu dụng khi dùng websocket nhận 1 luồng response có tác dụng mapping giữa các request và response, TH này dùng POST đơn giản thì k có tác dụng gì
+Các giá trị pass vào json thì phải convert sang HEX trước khi tạo request và prefix phải 0x
+Các method đều là các hàm ethereum api k liên quan đến web3, chú ý vài hàm web3 có cấu trúc giống làm ta tưởng ta đang code web3 nhưng không phải, thao tác với terminal là ta đang thao tác trực tiếp với json-rpc
+
+=> Mở git bash lên nhập lệnh rpc vì 1 vài terminal có thể k hỗ trợ curl, dùng Powershell phải thử xem alias nó là gì:
+curl -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' http://0.0.0.0:8545  => lấy số block
+
+curl -X POST --data '{"jsonrpc":"2.0", "method": "eth_getStorageAt", "params": ["0xe396578C54988df0682b6DB65d1FD0Bfd0a498E2", "0x0", "latest"], "id": 1}' http://0.0.0.0:8545 => lấy giá trị lưu trong storage của contract, 1 là địa chỉ contract, 2 là vị trí slot muốn lấy
+
+curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getLogs","params":[{"address": "0x1Afc3fdC7884c6a2064c2f39c60d62a7a042703A","fromBlock": "0x0","topics":[]}],"id":74}' http://0.0.0.0:8545 => lấy log event
+
