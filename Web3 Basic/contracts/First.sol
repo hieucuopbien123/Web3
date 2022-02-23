@@ -12,4 +12,14 @@ contract MyContract {
     function setDataPrivate(uint _data) private {
         data = _data + 10;
     }
+    string public functionCalled;
+    function sendEther() external payable {
+        functionCalled = "sendEther";
+    }
+    fallback() external payable {
+        functionCalled = "fallback";
+    }
+    receive() external payable {
+        functionCalled = "receive";
+    }
 }
