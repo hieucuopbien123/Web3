@@ -14,3 +14,16 @@ import Web3 from 'web3'; => front end dùng npm package
 unpkg là dự án giúp dùng tất cả các public npm package như CDN cho dự án mà k cần install npm package
 unpkg.com/:package@:version/:file
 VD: unpkg.com/web3@1.2.4/dist/web3.min.js => script nó trong file html luôn
+
+Web3<->Provider <-> Ethereum Node -> SmartContracts
+Nguyên nhân nó không dùng Web3 liên kết thẳng với Ethereum Node luôn là bởi vì nó muốn dùng Provider để tương thích với nhiều loại Wallet khác nhau
+Wallet --expose--> Provider <--used by-- DApp
+=> Mỗi 1 thứ dùng trong DApp sẽ có 1 cách cung Provider khác nhau với vai trò khác nhau, chỉ cần nhét nó vào web3 của DApp để dùng thôi
+
+Sau khi đã có Provider:
+web3 instance --address+ABI--> contract instance -> smart contract
+ABI là các function của contract mà web3 có thể gọi, ta có thể có 1 object ABI k đầy đủ mà chỉ cần có các function cần gọi thôi
+Để test được thì phải có 1 dự án thực tế có abi và address riêng của smart contract deploy lên 1 blockchain chỉ định
+
+setup nhanh: truffle init -> code contract -> truffle compile thì bên trong file json có abi nhưng phần networks trống, mỗi khi deploy thì phần networks sẽ lưu thông tin về network cùng contract này deployed trên network đó
+-> edit mạng trong truffle.config.js -> truffle develop (dùng ganache có sẵn của truffle)-> migrate --reset
