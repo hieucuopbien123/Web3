@@ -1,0 +1,79 @@
+Cơ chế normal khi hiển thị:
+Khi vào 1 app thì chưa connect, khi ấn connect thì pop up ví để người dùng connect
+Người dùng cũng có thể disconnect thì quay lại trạng thái ban đầu
+=> app phải bắt trạng thái khi nào connect, khi nào không và phải connect thì mới có quyền thao tác
+Nếu người dùng chuyển account => app phải đổi sang account mới
+Nếu người dùng đổi mạng => app phải chặn quyền thao tác và yêu câu mạng
+Nếu người dùng thao tác or từ chối thao tác => app phải bắt được có thực hiện hay không
+
+Cơ chế normal nhất khi code:
+Ta chỉ viết code khi người dùng vào app thì connect ví họ vào, nếu có lỗi thì in ra, việc kết nối được thực hiện trong useEffect [] của App
+=> Điều này là toang vì người dùng k ở cùng mạng sẽ báo lỗi, người dùng chuyển hay reject sẽ chả hiển thị gì và chả tương tác được
+
+Cơ chế normal đầy đủ xử lý mọi thứ bên trên: Khi xử lý đầy đủ thì phải handle mọi thứ
+C1(dự án multisig): bản cũ rồi
+vào cái có 1 nút-> ấn nút gọi hàm connect web3 -> bên trong connect to ví metamask
+Nếu account hay web3 đổi thì gọi 2 hàm subscribe account và network, trước đó phải unsubscribe nếu đã tưng subscribe. Subscribe ở đây là bắt account và network sau mỗi 1s
+Nếu account kết nối thành công và đang ở đúng mạng thì ta hiển thị thông tin
+Nếu mạng k đúng or account kết nối không thành công thì alert lỗi ra
+C2(Dự án redux web3 cơ bản đầy đủ): bản mới
+Có nút bấm -> bấm là connect web3 lấy account và chain. Đồng thời bắt 2 sự kiện là accountsChanged và chainChanged trong window.ethereum sau đó. Còn có event connect và disconnect có thể bắt
+Dùng Router, mặc định vào là hiện ra trang có nút bấm đó. Khi đã connect có rồi thì cho phép mở khóa trang thứ 2 để chuyển sang trang thứ 2
+Nếu account, netId thay đổi thì các component hiển thị bằng cách lấy dữ liệu từ web3 sẽ thực hiện lấy lại lần nữa-> dùng useEffect [web3, address, netId]
+=> Với kiểu này ta thường phân chia file web3 ở 1 thư mục riêng với 2 file: file đầu tiên chứa hàm gọi init là connect với ví metamask popup ra và trả ra 3 thông tin cần lấy là account, networkId, web3 => hàm này được gọi ở file gốc khi ta init sẽ lấy web3 để truyền vào gọi hàm ở file thứ 2(thế thì biến account nên để global để import từ file này cx được mà k cần truyền qua lại làm gì), còn networkId và account để detect change sẽ gọi lại các hàm; file thứ 2 là file dùng để gọi các hàm trong mọi contract từ contract instance và biến web3 để lấy thông tin về cũng như send transaction, cũng có thể dùng để subscribeEvent được. Các hàm trong file này bên trong đầu tiên luôn phải gọi hàm init nếu check instance contract k tồn tại
+=> Cơ chế update data: 1 là call getter để lấy data lại mỗi khi biến web3, account, netId thay đổi; 2 là sau khi đã có rồi thì sẽ subscribe event để update lại mọi thứ đang có để nếu đã hiển thị xong rồi thì bỗng dưng có thay đổi thì update luôn, hàm subscribe này cũng phải gọi lại mỗi khi web3, account, netId thay đổi;
+
+Phân tích web3 redux-toolkit cơ bản(trava front-end): đây là bộ chuẩn mà ta luôn luôn theo vì các cái trên toàn dùng redux bản cũ. Cái này là redux-toolkit chuẩn, React router cũng chuẩn, web3 chia file cũng chuẩn
+folder address lưu mọi address
+folder artifacts lưu mọi abi
+folder network lưu mọi thông tin về network
+folder utils là folder chứa các hàm gọi các hàm trong contract. Thông thường thì DApp sẽ tương tác với nhiều contract và mỗi contract tương ứng với 1 file. 
+folder wallet chứa các thứ tương tác với ví wallet provider, lấy instance web3
+Cơ chế hoạt động:
+- folder address chứa các thông tin về address. Vì 1 sản phẩm có thể chạy trên 2 blockchain khác nhau như bsc mainnet, bsc testnet, phantom testnet, phantom mainnet thì address của dự án trên mỗi blockchain nên để ở 1 file riêng còn file index sẽ quyết định dùng blockchain nào dựa vào 1 tham số truyền vào
+- folder artifacts chứa abi mọi contract, trên mỗi mạng thì abi của mọi contract luôn là như nhau
+- folder networks chứa thông tin của mỗi network và trong index của nó cũng cho phép lấy thông số của network nào dựa vào 1 tham số truyền vào
+- folder wallet: Ở đây nó xử lý rắc rối là vì nó chia 2 loại ví khác nhau là metamask và wallet-connect
+index.js: 
+  hàm set instance web3Reader bằng cách dùng tất cả các rpc và lấy rpc nào ok nhất
+  hàm set web3Sender
+  hàm set/get cho localStorage lấy currentConnectedWallet là metamask hay wallet-connect
+folder event-handler:
+  file metamask.js:
+    hàm addMetaMaskEventListeners cứ 1s setInterval request account 1 lần. bắt accountsChanged thì disconnect ví hiện tại và reload trang. chainChanged thì yêu cầu chuyển sang network nào nếu k đúng và disconnect ví hiện tại
+    hàm hdConnectMetaMask sẽ check có ví(provider) trong browser không và gọi hàm trên. set cái web3Sender từ provider đó, set localStorage là dùng metamask chứ k dùng wallet-connect và request và dispatch cái update account
+    hàm removeAllListener của window ethereum và clear cái setInterval
+  file disconnect.js:
+    có 1 hàm disconnect lấy cái loại ví hiện tại là gì, nếu là metamask thì gọi hàm clearMetaMaskEventListeners của metamask.js, nếu là wallet-connect thì sẽ disconnect cái provider, clearWalletConnectEventListeners và refesh window sau 1s; Sau đó đều setWeb3Sender về mo và setlocalstorage là k dùng ví nào cả
+=> do ta k rõ wallet-connect khác metamask như nào nhưng cứ cho là v đi
+  file wallet-connect:
+    hàm clear mọi event
+    hàm addWalletConnectEventListeners dùng bắt 4 sự kiện provider.on accountsChanged thì update accounts, chainChanged thì check tương tự metamask là nếu chainId k đúng thì disconnect, disconnect thì disconnect, provider.wc.on("disconnect",...) là khi user chủ động disconnect thì ta reload lại trang
+    hàm hdConnectWalletConnect thì gọi hàm trên r set Web3sender, set loại ví hiện tại, update accounts
+  file reconnect.js:
+    initReconnectWallet sẽ lấy cái loại ví hiện tại và check nếu là metamask thì khởi tạo web3 và check nếu chainId khác thì yêu cầu chuyển lại bằng cách gọi hàm switch network ở file khác, sau đó coi như await nó là đã switch xong r thì gọi hàm connect metamask đã có ở file metamask; còn nếu là wallet-connect thì connect vào nó thôi. Cả 2 đều phải bắt nếu có error thì clearEvent hết
+file network-switcher.js:
+  1 hàm switchNetwork lấy network hiện tại và khởi tạo instance web3 từ provider đã set cho Web3. Check nếu chainId không đúng thì request rpc lệnh wallet_switchEthereumChain. nếu có lỗi thì thì disconect và request wallet_addEthereumChain rồi lại request rpc wallet_switchEthereumChain => khi nào chainId sai thì gọi để đổi
+- folder utils:
+  gọi hàm trong từng contract một. Nó dùng 2 loại instance web3 mà ta đã có là web3Reader để tạo contract mà dùng hàm call, web3Sender để tạo contract mà dùng hàm send. Nó cần address và instance web3 thì address là đối số truyền vào hàm, với những contract cố định cốt lõi thì đặt làm hằng số global
+
+=> web3Reader được set khi render App lần đầu tiên, web3Sender được set khi người dùng đã ấn nút connect wallet và thực hiện connect xong ví của mình
+=> hàm setCurrentConnectedWallet để set localStorage cho biết loại ví nào được gọi mỗi khi setWeb3Sender
+=> Hàm hdConnectMetaMask và hdConnectWalletConnect trong 2 file trong web3 giúp connect ví từ đầu chí thực ra chỉ được dùng khi reconnect thì ta gọi vào hàm này. Còn bình thường khi connect ví ở ngoài thì ta tự viết code + dùng hàm add Event thôi
+=> hàm ở file reconnect được gọi ở 1 nơi duy nhất là khi render lần đầu trong App. Bên trong nó ta cũng biết rồi là nó check ví hiện tại là gì thì connect vào ví đó. Nhưng lần đầu tiên truy cập k có localStorage ví gì nên sẽ k làm gì cả. Hàm này gọi khi lần đầu render App bởi vì nếu như ta mở app xong tắt tab đi nhưng chưa đóng browser và mở lại thì nó sẽ tự động kết nối vào cái đã kết nối trước đó vì localStorage vẫn chưa bị mất, người dùng sẽ kp connect lại
+=> Còn lại cơ chế tương tự là ấn nút thì connect: ấn nút-> gọi hàm connect giả sử là metamask: nếu mobile thì bỏ -> nếu máy tính thì check loại ví là wallet-connect thì clearEvent -> check chainId khác thì gọi switch network-> bh đã đảm bảo network chuẩn thì lấy provider window gán cho ví -> thêm các sự kiện account và chain Changed(đã có hàm trong thư mục web3) -> setWeb3Sender để gọi hàm và loại ví là metamask -> dispatch update account vào redux -> đương nhiên có catch error nếu sai thì clearEvent. Cơ chế wallet-connect tương tự thôi.
+=> Nó update các thứ liên quan đến realtime về tài khoản bằng cách lấy account và dùng useEffect [account hiện tại] và nếu account hiện tại mà đổi thì ta mới fetch update các thứ liên quan đến account
+=> Cơ chế detect dataChanged thì gọi hàm sẽ change in real time: ta vẫn chưa hiểu là nó lấy data từ 1 host => nó k hề change in real time trong dự án thực tế
+
+Cái này càng khiến cho nó đơn giản. Vì trên mainnet nếu 1 IP mà request quá nhiều thì các node sẽ chặn IP đó nên trong các dự án thực tế, họ k chơi listen events nên trải nghiệm người dùng có thể k thực sự tốt. Các thứ thường chỉ update mới nhất tại thời điểm nó được gọi mà thôi. Tức ta mở trang web sau 1h đồng hồ thì nó không hề đổi, nên nếu 2 người cùng mua 1 thứ cách nhau vài giây thì k thấy người kia và người mua sau sẽ báo error mà thôi. Lập trình giao diện với dữ liệu tĩnh như vậy làm cho bài toán càng đơn giản cho phía front-end.
+Như v front-end có 2 TH:
+1 là call data trực tiếp từ contract
+2 là fetch API từ server mà server đã lấy data sẵn từ contract cho ta r. Họ làm 1 bộ crawl dữ liệu từ BSC về local server như v và update nó (như nào ta chưa cần biết)
+=> cả 2 cách đều có dữ liệu chỉ real-time vào thời điểm được gọi. Tuy nhiên để khiến nó thực tế hơn thì các trang như marketplace sau khi send transaction thì await xong nó sẽ call lại cái phần data vừa send để update phần đó thôi
+Nếu 1 trang marketplace mà có quá nhiều người mua thì trải nghiệm người dùng k tốt vì họ cứ mua cái gì là có người khác mua trước đó rồi vì quá nhiều mà. Nhưng thường thì chuyện này không xảy ra vì marketplace bh có rất nhiều và loãng hết. Tương tự các trang như thống kê hay gì thì k cần dữ liệu quá chuẩn mà chỉ cần thống kê đúng thời điểm được gọi là ok r
+
+
+Với dự án như leaderboard mà ta k cần send transaction thì chả cần web3Sender mà chỉ cần Web3Reader nhưng nó cũng không lấy data nên chưa dùng
+
+
+Dự án front-end đầy đủ phải setup ban đầu rất nhiều thứ: POSTMAN phía server có rồi, react, redux slice chia file như nào, các phần của src được chia ra như assets pages layouts icons hooks constance config components themecolor, web3 trong src có khởi tạo instance web3 và connect các kiểu + call các hàm trong contract, Router của source, Root App, setup docker, eslint, git, husky, các package khác như axios materialui, các package bổ trợ cho web3 cũng như front end code như bignumber detect-provider, env. 

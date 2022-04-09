@@ -27,3 +27,36 @@ ABI là các function của contract mà web3 có thể gọi, ta có thể có 
 
 setup nhanh: truffle init -> code contract -> truffle compile thì bên trong file json có abi nhưng phần networks trống, mỗi khi deploy thì phần networks sẽ lưu thông tin về network cùng contract này deployed trên network đó
 -> edit mạng trong truffle.config.js -> truffle develop (dùng ganache có sẵn của truffle)-> migrate --reset
+
+Để cài npm thật ra không đơn giản, khi cài 1 package, nó phải biên dịch package đó nhưng không phải package nào cũng compile được. VD để dùng được truffle nó yêu cầu trong máy tính phải có python và C mới npm install được. Nhưng điều quan trọng là phải đúng phiên bản. Điều này rất khó nếu như ta cài thủ công python và C++ không rõ phiên bản nào hỗ trợ chuẩn, xong còn phải thêm environment var. Cái này được xác định trong module node-gyp nhưng module này không dùng được trong window
+=> Để fix: npm install --global --production windows-build-tools sẽ tự install các tool hỗ trợ mặc định trong window là python và C++ và -g giúp nó tự thêm environment var luôn
+=> Tuy nhiên package windows-build-tools có thể bị lỗi stuck k tải tiếp được. Nên có cách khác:
+Tải python 2.7 trên trang chủ
+npm config set python python2.7
+Tải VS2017 -> mở installer chọn cài desktop development C++
+npm config set msvs_version 2017
+-> khởi động lại VSC và cài các package bình thường
+
+Để tương tác với public network thì phải có provider lấy url từ infura, còn private network ta truy cập ez r
+Để tiện ta dùng @truffle/hdwallet-provider để tạo ra 1 provider dễ hơn tương tác trên public net với đầu vào là tài khoản(pub/pib key) trên các cái public net đó. hdwallet-provider chỉ để tạo provider tiện hơn, ta có thể dùng nó cho ganache thoải mái. Chính vì vậy cái này thường dùng ở backend, còn front end họ dùng provider của wallet software trên browser cơ
+
+Bởi vì ganache là mạng test for development nên nó cấu hình đơn giản đi để dev có thể dùng nhanh nhất nên khi ta tạo provider chỉ bằng 1 url thì nó cũng tự unlock 10 accounts và mặc định dùng accounts đầu tiên để deployed contract và làm các thứ. Nhưng trên public net k có 10 accounts sẵn như thế nên ta phải dùng tk của ta, cung cả piv/pubkey vào để nhận được provider mà tương tác:
+web3 -> sign transaction by wallet(or by piv/pub key là 1 tk trên mạng public) -> send signed transaction to public net
+=> Chính vì phải signed transaction nên mới cần cặp key và node để chuyển tiếp sang các node khác trên mạng do đó ta dùng hdwallet-provider hỗ trợ cho tiện chứ dùng web3 thực ra cx được nhưng họ thường dùng web3 để dùng provider cho local thôi
+=> Đương nhiên là ta dùng hdwallet-provider để tạo provider tương tác với ganache cx được thôi nhưng phải gửi ether vào tk đó r mới dùng được
+
+npm i -g eth-cli
+eth address:random 
+=> package giúp sinh cặp piv, pub key => ta có thể tạo ứng dụng lộ pivkey luôn vì coi như sinh ra dùng 1 lần trong 1 dự án đó thôi
+
+Phân biệt dùng infura và dùng metamask:
+TH1: ta dùng account với infura ở backend với pubnet, k có ví
+Web3 cung provider -> tạo transaction -> account của sign transaction -> node infura gửi lên mạng pubnet
+TH2: ta dùng metamask tương tác pubnet
+Web3 cung provider -> tạo transaction -> metamask request user ký trans và gửi lên mạng pubnet
+=> Như v, ví có 2 chức năng là request user ký trans và ký xong thì nó gửi lên mạng
+=> Do đó khi không có ví thì account trong code JS của ta chỉ ký trans chứ k tự động gửi nó lên mạng => để giúp nó gửi được nó lên mạng, ta phải thông qua node infura. Tức là wallet chỉ có tác dụng làm thêm công việc của infura nhưng mà trên giao diện
+
+Web3 Advance: truffle unbox react => tạo nhanh 1 dự án mẫu bằng truffle react
+Ở đây ta chạy mạng: ganache-cli -m "<seed phrase của metamask>" => đây là cách để khởi tạo 10 tài khoản của ganache từ seed phrase này thì các accounts trong metamask sẽ có sẵn ether của mạng ganache => tức bth ta k dùng như v thì 10 tk nó sinh từ seed phrase ngẫu nhiên
+Chỉnh truffle-config network develop cho mạng ganache local => truffle migrate --reset --network develop => nếu chạy nhiều lần phải reset account để nó xóa mọi transaction history

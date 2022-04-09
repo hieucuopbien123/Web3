@@ -3,11 +3,13 @@ pragma solidity >= 0.8.0;
 
 contract MyContract {
     uint data;
+    event MyEvent(uint indexed data, uint date, string indexed value);
     function getData() external view returns(uint) {
         return data;
     }
-    function setData(uint _data) external {
+    function setData(uint _data, string calldata value) external {
         data = _data;
+        emit MyEvent(data, block.timestamp, value);
     }
     function setDataPrivate(uint _data) private {
         data = _data + 10;
